@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - Gallery Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Poppins', sans-serif; background: #f0f2f5; padding: 2rem; }
+        .container { max-width: 1400px; margin:0 auto; }
+        .header { background: white; border-radius: 28px; padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .upload-card { background: white; border-radius: 28px; padding: 1.5rem; margin-bottom: 2rem; }
+        .upload-form { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+        .form-group { flex:1; min-width: 200px; }
+        .form-group label { font-weight: 600; display: block; margin-bottom: 0.5rem; }
+        select, input { width:100%; padding: 0.7rem; border-radius: 40px; border:1px solid #ccc; }
+        .btn { background: #FF8C00; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 40px; cursor: pointer; }
+        .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px,1fr)); gap: 1.5rem; }
+        .category-card { background: white; border-radius: 28px; overflow: hidden; }
+        .category-header { background: #FF8C00; color: white; padding: 1rem; display: flex; justify-content: space-between; }
+        .image-preview { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; max-height: 260px; overflow-y: auto; }
+        .image-preview img { width: 90px; height: 80px; object-fit: cover; border-radius: 12px; cursor: pointer; }
+        .image-item { position: relative; }
+        .delete-img { position: absolute; top: -8px; right: -8px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; text-align: center; cursor: pointer; }
+        .category-actions { padding: 1rem; border-top: 1px solid #eee; display: flex; gap: 1rem; }
+        .btn-clear { background: #fee2e2; color: #b91c1c; border: none; padding: 0.4rem 1rem; border-radius: 40px; cursor: pointer; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 0.5rem 1rem; border-radius: 40px; display: none; }
+        .auth-container { text-align: center; padding: 4rem; background: white; border-radius: 28px; }
+        .sign-out-btn { background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 40px; cursor: pointer; margin-left: 1rem; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="header">
+        <h2><i class="fas fa-camera"></i> Gallery Admin</h2>
+        <a href="index.html" target="_blank" class="btn">View Site</a>
+    </div>
+    <div id="adminContent">
+        <!-- Loading or Auth UI will appear here -->
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // --- CONFIGURE YOUR SUPABASE CREDENTIALS HERE ---
+    const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentCategories = [];
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.background = isError ? '#ef4444' : '#10b981';
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    async function loadCategories() {
+        const { data, error } = await supabase
+            .from('gallery')
+            .select('categories')
+            .eq('id', 'main')
+            .single();
+        if (error) {
+            console.error(error);
+            showToast("Failed to load categories", true);
+            return [];
+        }
+        return data.categories;
+    }
+
+    async function saveCategories(categories) {
+        const { error } = await supabase
+            .from('gallery')
+            .update({ categories: categories })
+            .eq('id', 'main');
+        if (error) {
+            showToast("Failed to save changes", true);
+            console.error(error);
+            return false;
+        }
+        return true;
+    }
+
+    async function uploadToSupabase(file, categoryName) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${categoryName}/${fileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('gallery-images')
+            .upload(filePath, file);
+
+        if (error) throw error;
+
+        // Construct public URL manually (or use getPublicUrl)
+        const { data: publicUrlData } = supabase.storage
+            .from('gallery-images')
+            .getPublicUrl(filePath);
+        
+        return publicUrlData.publicUrl;
+    }
+
+    async function handleUpload() {
+        const files = document.getElementById('imageFiles').files;
+        if (!files.length) return showToast("Select images", true);
+        const categoryName = document.getElementById('categorySelect').value;
+        const catIndex = currentCategories.findIndex(c => c.name === categoryName);
+        if (catIndex === -1) return;
+
+        showToast("Uploading... please wait");
+        const uploadedUrls = [];
+        for (let file of files) {
+            try {
+                const url = await uploadToSupabase(file, categoryName);
+                uploadedUrls.push(url);
+            } catch (err) {
+                showToast(`Failed to upload ${file.name}`, true);
+                console.error(err);
+            }
+        }
+        if (uploadedUrls.length) {
+            currentCategories[catIndex].images.push(...uploadedUrls);
+            if (await saveCategories(currentCategories)) {
+                showToast(`Added ${uploadedUrls.length} images to ${categoryName}`);
+                renderAdminPanel();
+                document.getElementById('imageFiles').value = '';
+            }
+        } else {
+            showToast("No images uploaded", true);
+        }
+    }
+
+    async function deleteImage(catIdx, imgIdx) {
+        const imageUrl = currentCategories[catIdx].images[imgIdx];
+        // Optionally delete from storage (requires supabase admin rights)
+        // We'll skip storage deletion for simplicity, just remove from DB.
+        currentCategories[catIdx].images.splice(imgIdx, 1);
+        if (await saveCategories(currentCategories)) {
+            showToast("Image deleted");
+            renderAdminPanel();
+        }
+    }
+
+    async function clearCategory(catIdx) {
+        if (!confirm(`Delete ALL images from "${currentCategories[catIdx].name}"?`)) return;
+        currentCategories[catIdx].images = [];
+        if (await saveCategories(currentCategories)) {
+            showToast(`Cleared ${currentCategories[catIdx].name}`);
+            renderAdminPanel();
+        }
+    }
+
+    function renderAdminPanel() {
+        const container = document.getElementById('adminContent');
+        if (!container) return;
+
+        let html = `
+            <div class="upload-card">
+                <h3>Upload New Images</h3>
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="categorySelect">
+                            <option>Music & Singing</option><option>Traditional Dance</option><option>Fashion & Modeling</option>
+                            <option>Environmental Action</option><option>Poetry & Spoken Word</option><option>Community Service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Images (multiple)</label>
+                        <input type="file" id="imageFiles" multiple accept="image/*">
+                    </div>
+                    <button class="btn" id="uploadBtn"><i class="fas fa-upload"></i> Upload</button>
+                </div>
+            </div>
+            <div class="categories-grid" id="categoriesGrid"></div>
+        `;
+        container.innerHTML = html;
+
+        const categoriesGrid = document.getElementById('categoriesGrid');
+        currentCategories.forEach((cat, idx) => {
+            let imagesHtml = '';
+            cat.images.forEach((imgUrl, imgIdx) => {
+                imagesHtml += `
+                    <div class="image-item">
+                        <img src="${imgUrl}" onclick="window.open('${imgUrl}','_blank')">
+                        <div class="delete-img" data-cat-idx="${idx}" data-img-idx="${imgIdx}">×</div>
+                    </div>
+                `;
+            });
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            card.innerHTML = `
+                <div class="category-header"><h3><i class="fas ${cat.icon}"></i> ${cat.name}</h3><span>${cat.images.length} images</span></div>
+                <div class="image-preview">${imagesHtml || '<div style="color:gray;">No images</div>'}</div>
+                <div class="category-actions"><button class="btn-clear" data-cat-idx="${idx}">Clear all</button></div>
+            `;
+            categoriesGrid.appendChild(card);
+        });
+
+        document.getElementById('uploadBtn')?.addEventListener('click', handleUpload);
+        document.querySelectorAll('.delete-img').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const catIdx = parseInt(btn.getAttribute('data-cat-idx'));
+                const imgIdx = parseInt(btn.getAttribute('data-img-idx'));
+                deleteImage(catIdx, imgIdx);
+            });
+        });
+        document.querySelectorAll('.btn-clear').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const catIdx = parseInt(btn.getAttribute('data-cat-idx'));
+                clearCategory(catIdx);
+            });
+        });
+    }
+
+    // Authentication and initialization
+    async function initAdmin() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: prompt("Enter your Supabase email:"),
+                password: prompt("Enter your Supabase password:")
+            });
+            if (error) {
+                document.getElementById('adminContent').innerHTML = '<div class="auth-container">Authentication failed. Please reload and try again.</div>';
+                return;
+            }
+        }
+        currentCategories = await loadCategories();
+        renderAdminPanel();
+    }
+
+    initAdmin();
+</script>
+</body>
+</html>
