@@ -1397,5 +1397,136 @@ document.querySelectorAll('.card, .stat-box, .team-card, .testimonial-card, .gal
   observer.observe(el);
 });
 </script>
+  <!-- Dynamic Gallery Loader from Supabase -->
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  // 1. CONFIGURE YOUR SUPABASE CREDENTIALS HERE
+  const SUPABASE_URL = 'https://ttzhnqlermolclgyeyst.supabase.co'; // e.g. https://xxxxx.supabase.co
+  const SUPABASE_ANON_KEY = 'https://ttzhnqlermolclgyeyst.supabase.co';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // 2. Define the default category structure (will be merged with server data)
+  const DEFAULT_CATEGORIES = [
+    { name: "Music & Singing", icon: "fa-microphone-alt", images: [] },
+    { name: "Traditional Dance", icon: "fa-drumstick-bite", images: [] },
+    { name: "Fashion & Modeling", icon: "fa-tshirt", images: [] },
+    { name: "Environmental Action", icon: "fa-leaf", images: [] },
+    { name: "Poetry & Spoken Word", icon: "fa-feather-alt", images: [] },
+    { name: "Community Service", icon: "fa-hand-holding-heart", images: [] }
+  ];
+
+  // 3. Fetch gallery data from Supabase
+  async function loadGalleryFromSupabase() {
+    try {
+      const { data, error } = await supabase
+        .from('gallery')
+        .select('categories')
+        .eq('id', 'main')
+        .single();
+
+      if (error) throw error;
+      if (data && data.categories) {
+        return data.categories;
+      }
+    } catch (err) {
+      console.warn("Could not load gallery from Supabase, using defaults.", err);
+    }
+    return DEFAULT_CATEGORIES;
+  }
+
+  // 4. Render the gallery cards (same as before)
+  function renderGallery(categories) {
+    const container = document.getElementById('dynamicGalleryGrid');
+    if (!container) return;
+    container.innerHTML = '';
+
+    categories.forEach(cat => {
+      const card = document.createElement('div');
+      card.className = 'gallery-item';
+      const firstImage = (cat.images && cat.images.length) ? cat.images[0] : '';
+      if (firstImage) {
+        card.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('${firstImage}')`;
+        card.style.backgroundSize = 'cover';
+        card.style.backgroundPosition = 'center';
+      } else {
+        card.style.background = 'linear-gradient(135deg, #e0e0e0, #d0d0d0)';
+      }
+      const imageCount = cat.images ? cat.images.length : 0;
+      card.innerHTML = `
+        <i class="fas ${cat.icon || 'fa-image'}"></i>
+        <span>${cat.name}</span>
+        <div class="gallery-overlay">${imageCount} ${imageCount === 1 ? 'image' : 'images'} · Click to view</div>
+      `;
+      card.addEventListener('click', () => {
+        if (cat.images && cat.images.length) {
+          openLightbox(cat.images, cat.name);
+        } else {
+          alert("No images in this category yet.");
+        }
+      });
+      container.appendChild(card);
+    });
+  }
+
+  // 5. Lightbox implementation (unchanged, but included for completeness)
+  let currentImages = [], currentIndex = 0;
+  function openLightbox(images, categoryName) {
+    if (!images.length) return;
+    currentImages = images;
+    currentIndex = 0;
+    let modal = document.getElementById('galleryLightbox');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'galleryLightbox';
+      modal.className = 'lightbox-modal';
+      modal.innerHTML = `
+        <div class="close-lightbox" id="closeLightboxBtn">&times;</div>
+        <div class="lightbox-nav prev-btn" id="galleryPrev"><i class="fas fa-chevron-left"></i></div>
+        <div class="lightbox-nav next-btn" id="galleryNext"><i class="fas fa-chevron-right"></i></div>
+        <div class="lightbox-content"><img id="lightboxImg" class="lightbox-img" alt="gallery"></div>
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+      `;
+      document.body.appendChild(modal);
+      if (!document.querySelector('#lightboxStyles')) {
+        const style = document.createElement('style');
+        style.id = 'lightboxStyles';
+        style.textContent = `
+          .lightbox-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+          .lightbox-modal.active { display: flex; }
+          .lightbox-content { max-width: 85vw; max-height: 80vh; }
+          .lightbox-img { max-width: 100%; max-height: 75vh; border-radius: 24px; object-fit: contain; }
+          .lightbox-caption { color: white; margin-top: 1rem; background: rgba(0,0,0,0.6); padding: 0.5rem 1.2rem; border-radius: 40px; }
+          .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 1.8rem; }
+          .prev-btn { left: 20px; } .next-btn { right: 20px; }
+          .close-lightbox { position: absolute; top: 25px; right: 35px; font-size: 2rem; color: white; cursor: pointer; background: rgba(0,0,0,0.5); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        `;
+        document.head.appendChild(style);
+      }
+      document.getElementById('closeLightboxBtn').addEventListener('click', () => modal.classList.remove('active'));
+      document.getElementById('galleryPrev').addEventListener('click', () => { if (currentImages.length) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightbox(categoryName); } });
+      document.getElementById('galleryNext').addEventListener('click', () => { if (currentImages.length) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightbox(categoryName); } });
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+      document.addEventListener('keydown', (e) => { if (modal.classList.contains('active')) { if (e.key === 'ArrowRight') document.getElementById('galleryNext').click(); if (e.key === 'ArrowLeft') document.getElementById('galleryPrev').click(); if (e.key === 'Escape') modal.classList.remove('active'); } });
+    }
+    function updateLightbox(catName) {
+      const img = document.getElementById('lightboxImg');
+      const cap = document.getElementById('lightboxCaption');
+      if (currentImages[currentIndex]) {
+        img.src = currentImages[currentIndex];
+        cap.innerText = `${catName} - ${currentIndex+1} / ${currentImages.length}`;
+      }
+    }
+    updateLightbox(categoryName);
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    modal.addEventListener('click', (e) => { if (e.target === modal) document.body.style.overflow = ''; });
+    document.getElementById('closeLightboxBtn').addEventListener('click', () => document.body.style.overflow = '');
+  }
+
+  // Initialize the gallery
+  const categories = await loadGalleryFromSupabase();
+  renderGallery(categories);
+</script>
 </body>
 </html>
