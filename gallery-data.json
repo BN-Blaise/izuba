@@ -1,0 +1,52 @@
+{
+  "categories": [
+    {
+      "name": "Music & Singing",
+      "icon": "fa-microphone-alt",
+      "images": [
+        "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=1200&q=80"
+      ]
+    },
+    {
+      "name": "Traditional Dance",
+      "icon": "fa-drumstick-bite",
+      "images": [
+        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1515165562835-c2c4f0f36ca3?auto=format&fit=crop&w=1200&q=80"
+      ]
+    },
+    {
+      "name": "Fashion & Modeling",
+      "icon": "fa-tshirt",
+      "images": [
+        "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1521334884684-d80222895322?auto=format&fit=crop&w=1200&q=80"
+      ]
+    },
+    {
+      "name": "Environmental Action",
+      "icon": "fa-leaf",
+      "images": [
+        "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?auto=format&fit=crop&w=1200&q=80"
+      ]
+    },
+    {
+      "name": "Poetry & Spoken Word",
+      "icon": "fa-feather-alt",
+      "images": [
+        "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1496318447583-f524534e9ce1?auto=format&fit=crop&w=1200&q=80"
+      ]
+    },
+    {
+      "name": "Community Service",
+      "icon": "fa-hand-holding-heart",
+      "images": [
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1200&q=80"
+      ]
+    }
+  ]
+}

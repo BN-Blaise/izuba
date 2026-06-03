@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Izuba Family Club | Gallery Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <section class="admin-login" id="adminLoginSection">
+    <div class="admin-login-card">
+      <h2>Admin Login</h2>
+      <p>Enter the admin password to access gallery management.</p>
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <input type="password" id="adminPassword" placeholder="Administrator password" required>
+        </div>
+        <button type="submit" class="btn-primary">Unlock Admin</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="admin-header hidden" id="adminHeaderSection">
+    <h1>Izuba Family Club Gallery Admin</h1>
+    <p>Manage gallery images locally. Changes are saved in your browser and will appear on the public page after refresh.</p>
+    <div class="admin-controls">
+      <a href="index.html" class="btn-primary"><i class="fas fa-home"></i> View Public Site</a>
+      <button id="refreshAdminBtn" class="btn-secondary"><i class="fas fa-sync-alt"></i> Refresh</button>
+      <button id="resetAdminBtn" class="btn-secondary"><i class="fas fa-undo"></i> Reset Defaults</button>
+      <button id="saveAdminBtn" class="btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+      <button id="logoutAdminBtn" class="btn-secondary"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </section>
+
+  <section class="admin-panel hidden" id="adminPanelSection">
+    <div id="adminCategories" class="admin-categories"></div>
+  </section>
+
+  <script src="scripts.js" defer></script>
+</body>
+</html>
